@@ -1,8 +1,16 @@
 <nav>
+  <div class="back-petcare-nav">
+      <!-- Botón volver atrás -->
+      <button type="button" id="btn-back" class="btn-back" style="display:none;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
       <a href="/" style="text-decoration: none;">
         <div class="nav-logo">Pet<span>Care</span></div>
       </a>
-
+  </div>
       <ul class="nav-links">
             <% if(usuario && usuario.tipo !== 'empresa') { %>
                 <li><a href="/pets/mypets">Mis Mascotas</a></li>
@@ -54,6 +62,12 @@
     <div id="mobile-nav-menu" class="mobile-nav-menu" hidden>
       <ul class="mobile-nav-links">
             <% if(usuario && usuario.tipo !== 'empresa') { %>
+              <button type="button" id="mobile-btn-back" class="mobile-btn-back" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Atrás
+              </button>
                 <li><a href="/pets/mypets">Mis Mascotas</a></li>
                 <li><a href="/services">Servicios</a></li>
                 <li><a href="/services/mis-chats">Chats</a></li>
@@ -61,6 +75,12 @@
                 <li><a href="/services/mis-anuncios">Mis anuncios</a></li>
                 <li><a href="/sobre-nosotros">Sobre nosotros</a></li>
             <% } else { %>
+              <button type="button" id="mobile-btn-back" class="mobile-btn-back" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Atrás
+              </button>
                 <li><a href="/services">Servicios</a></li>
                 <li><a href="/sobre-nosotros">Sobre nosotros</a></li>
             <% } %>
@@ -118,5 +138,52 @@
           const match = href === '/' ? path === '/' : path === href;
           if (match) a.classList.add('nav-active');
         });
+      })();
+
+      // Historial de navegación propio
+      (function () {
+        const STORAGE_KEY = 'navStack';
+        const currentUrl = window.location.pathname + window.location.search;
+
+        // Si estamos en home, resetear el historial y no mostrar botón
+        if (window.location.pathname === '/') {
+          sessionStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+
+        // Si no estamos en home, gestionar el historial normalmente
+        const stack = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
+
+        if (stack[stack.length - 1] !== currentUrl) {
+          stack.push(currentUrl);
+          if (stack.length > 20) stack.shift();
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stack));
+        }
+
+        function goBack() {
+          stack.pop();
+          const prev = stack[stack.length - 1];
+
+          // Si la página anterior es home o no hay más páginas, ir a home y resetear
+          if (!prev || prev === '/') {
+            sessionStorage.removeItem(STORAGE_KEY);
+            window.location.href = '/';
+            return;
+          }
+
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stack));
+          window.location.href = prev;
+        }
+
+        const btnBack = document.getElementById('btn-back');
+        const mobileBtnBack = document.getElementById('mobile-btn-back');
+
+        if (stack.length > 0) {
+          if (btnBack) btnBack.style.display = 'inline-flex';
+          if (mobileBtnBack) mobileBtnBack.style.display = 'block';
+        }
+
+        if (btnBack) btnBack.addEventListener('click', goBack);
+        if (mobileBtnBack) mobileBtnBack.addEventListener('click', goBack);
       })();
     </script>
