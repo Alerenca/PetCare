@@ -5474,3 +5474,51 @@ footer, .footer {
     align-self: flex-end;
   }
 }
+
+.back-petcare-nav{
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+}
+
+/* ── Botón atrás (navbar) ── */
+.btn-back {
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.4rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.btn-back:hover {
+  background: var(--warm);
+  color: var(--brown);
+}
+
+@media (max-width: 768px) {
+  .btn-back { display: none !important; }
+  .mobile-btn-back {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--brown);
+    background: var(--white);
+    border: 1px solid rgba(61,43,31,0.08);
+    border-radius: var(--radius-sm);
+    padding: 0.8rem 0.9rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+  }
+  .mobile-btn-back:hover { background: var(--warm); }
+}
+@media (min-width: 769px) {
+  .mobile-btn-back { display: none !important; }
+}
