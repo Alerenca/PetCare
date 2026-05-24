@@ -136,46 +136,74 @@
           <% if (!esPropia) { %>
             <button class="btn-section-add" onclick="abrirModalValorar()">+ Dejar reseña</button>
           <% } %>
+          <% if (valoraciones && valoraciones.length > 0) { %>
+            <span class="valoraciones-contador"><%= valoraciones.length %> <%= valoraciones.length === 1 ? 'valoración' : 'valoraciones' %></span>
+          <% } %>
         </div>
 
-        <!-- Resumen de puntuación -->
-        <div class="empresa-rating-summary">
-          <div class="empresa-rating-score">
-            <span class="rating-number"><%= empresa.valoracion_media || '—' %></span>
-            <span class="rating-max">/ 5</span>
-          </div>
-          <div class="empresa-rating-info">
-            <div class="rating-stars">
-              <% for (let i = 1; i <= 5; i++) { %>
-                <span class="star <%= i <= Math.round(empresa.valoracion_media || 0) ? 'star-on' : '' %>">★</span>
-              <% } %>
-            </div>
-            <span class="rating-count"><%= empresa.num_valoraciones || 0 %> valoraciones</span>
-          </div>
-        </div>
-
-        <!-- Lista de reseñas -->
         <% if (valoraciones && valoraciones.length > 0) { %>
-          <div class="empresa-reviews">
-            <% valoraciones.forEach(function(v) { %>
-              <div class="review-card">
-                <div class="review-header">
-                  <span class="review-autor">@<%= v.usuario %></span>
-                  <div class="review-stars">
+
+          <!-- Resumen con media -->
+          <div class="valoraciones-resumen">
+            <span class="valoraciones-media-numero"><%= mediaValoraciones.toFixed(1) %></span>
+            <div class="valoraciones-resumen-derecha">
+              <div class="valoraciones-estrellas-media">
+                <% for (let i = 1; i <= 5; i++) { %>
+                  <% if (i <= Math.round(mediaValoraciones)) { %>
+                    <span class="estrella estrella-llena">★</span>
+                  <% } else { %>
+                    <span class="estrella estrella-vacia">★</span>
+                  <% } %>
+                <% } %>
+              </div>
+              <span class="valoraciones-media-texto">sobre 5 · <%= valoraciones.length %> <%= valoraciones.length === 1 ? 'valoración' : 'valoraciones' %></span>
+            </div>
+          </div>
+
+          <!-- Lista de valoraciones -->
+          <div class="valoraciones-lista" id="valoraciones-lista">
+            <% valoraciones.forEach(function(val, index) { %>
+              <div class="valoracion-item <%= index >= 5 ? 'valoracion-oculta' : '' %>">
+                <div class="valoracion-cabecera">
+                  <div class="valoracion-estrellas">
                     <% for (let i = 1; i <= 5; i++) { %>
-                      <span class="star <%= i <= v.puntuacion ? 'star-on' : '' %>">★</span>
+                      <% if (i <= val.puntuacion) { %>
+                        <span class="estrella estrella-llena estrella-sm">★</span>
+                      <% } else { %>
+                        <span class="estrella estrella-vacia estrella-sm">★</span>
+                      <% } %>
+                    <% } %>
+                  </div>
+                  <div class="valoracion-cabecera-right">
+                    <span class="valoracion-autor">@<%= val.autor_nombre || 'Usuario' %></span>
+                    <% if (usuarioSesion && usuarioSesion.id !== val.id_autor) { %>
+                      <a href="#"
+                        class="valoracion-reportar"
+                        onclick="generarReporteValoracion(event, '<%= empresa.id_empresa %>', '<%= val.id_valoracion %>', '<%= val.id_autor %>')">
+                        Reportar ⚑
+                      </a>
                     <% } %>
                   </div>
                 </div>
-                <p class="review-texto"><%= v.texto %></p>
-                <span class="review-fecha"><%= new Date(v.fecha).toLocaleDateString('es-ES') %></span>
+                <% if (val.comentario) { %>
+                  <p class="valoracion-comentario"><%= val.comentario %></p>
+                <% } %>
               </div>
             <% }) %>
           </div>
+
+          <% if (valoraciones.length > 5) { %>
+            <div class="valoraciones-ver-mas-wrapper">
+              <button class="btn-ver-mas" id="btn-ver-mas" onclick="verMasValoraciones()">
+                Ver más valoraciones (<%= valoraciones.length - 5 %> restantes)
+              </button>
+            </div>
+          <% } %>
+
         <% } else { %>
-          <div class="perfil-empty" style="padding: 1.5rem;">
+          <div class="perfil-empty">
             <span class="perfil-empty-icon">⭐</span>
-            <p>Aún no hay valoraciones para esta empresa.</p>
+            <p><%= esPropia ? 'Aún no tienes valoraciones.' : 'Esta empresa aún no tiene valoraciones.' %></p>
           </div>
         <% } %>
       </div>
@@ -338,6 +366,65 @@
           });
       }
   </script>
+
+  <!-- Modal reportar valoración -->
+  <div id="modalReportar" style="display:none;">
+    <div id="modalReportar-contenido"></div>
+  </div>
+
+  <script>
+    const PASO = 5;
+    let visibles = 5;
+
+    function verMasValoraciones() {
+      const items = document.querySelectorAll('.valoracion-oculta');
+      let mostradas = 0;
+
+      items.forEach(function(item) {
+        if (mostradas < PASO) {
+          item.classList.remove('valoracion-oculta');
+          mostradas++;
+        }
+      });
+
+      visibles += mostradas;
+
+      const restantes = document.querySelectorAll('.valoracion-oculta').length;
+      const btn = document.getElementById('btn-ver-mas');
+
+      if (restantes === 0) {
+        btn.style.display = 'none';
+      } else {
+        btn.textContent = 'Ver más valoraciones (' + restantes + ' restantes)';
+      }
+    }
+
+    function cerrarModalReportar() {
+      document.getElementById('modalReportar').style.display = 'none';
+    }
+
+    async function generarReporteValoracion(event, empresaId, valoracionId, autorId) {
+      event.preventDefault();
+      const url = `/user/perfilEmpresa/${empresaId}/valoracion/${valoracionId}/usuario/${autorId}/reportar`;
+      try {
+        const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const html = await response.text();
+        if (!response.ok || /<!doctype\s+html|<html[\s>]/i.test(html || '')) {
+          window.location.href = url;
+          return;
+        }
+        document.getElementById('modalReportar-contenido').innerHTML = html;
+        document.getElementById('modalReportar').style.display = 'flex';
+      } catch (error) {
+        window.location.href = url;
+      }
+    }
+
+    document.getElementById('modalReportar').addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
+    });
+  </script>
+  <script src="/js/validarReporte.js"></script>
 
 </body>
 </html>

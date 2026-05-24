@@ -5522,3 +5522,11 @@ footer, .footer {
 @media (min-width: 769px) {
   .mobile-btn-back { display: none !important; }
 }
+
+.aviso-modificar-foro {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #2e1200;
+      margin-top: 0.5rem;
+      text-align: center;
+}

@@ -423,8 +423,8 @@ const postAdminRegistroEmpresa = (req, res) => {
                             });
                         }
 
-                        const insertQuery = 'INSERT INTO empresas (nombre, correo, contraseña, CIF, telefono_contacto, tipo, tipo_otro) VALUES (?, ?, ?, ?, ?, ?, ?)';
-                        connection.query(insertQuery, [nombre, correo, hashedPassword, cifNormalizado, telefono_contacto, tipoSeleccionado, tipoOtroGuardado], (errorInsert) => {
+                        const insertQuery = 'INSERT INTO empresas (nombre, correo, contraseña, CIF, telefono_contacto, tipo, tipo_otro, foto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+                        connection.query(insertQuery, [nombre, correo, hashedPassword, cifNormalizado, telefono_contacto, tipoSeleccionado, tipoOtroGuardado, '/images/empresa-default.png'], (errorInsert) => {
                             connection.release();
 
                             if (errorInsert) {

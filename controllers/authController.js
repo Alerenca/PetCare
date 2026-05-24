@@ -262,18 +262,17 @@ const postRegisterEmpresa = async (req, res, next) => {
                                     });
                                 }
 
-                                const insert_query = "INSERT INTO empresas (nombre, correo, contraseña, CIF, telefono_contacto, tipo, tipo_otro) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                                connection.query(insert_query, [nombre, correo, hashedPassword, cifNormalizado, telefono_contacto, tipo, tipoOtroGuardado], (insertErr, results) => {
+                                const insert_query = "INSERT INTO empresas (nombre, correo, contraseña, CIF, telefono_contacto, tipo, tipo_otro, foto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                                connection.query(insert_query, [nombre, correo, hashedPassword, cifNormalizado, telefono_contacto, tipo, tipoOtroGuardado, '/images/empresa-default.png'], (insertErr, results) => {
                                     connection.release();
                                     if (insertErr) {
                                         console.error("Error al insertar la empresa:", insertErr);
                                         return res.status(500).send("Error al insertar la empresa");
                                     }
-                                    const fotoEmpresa = null;
                                     req.session.usuario = {
                                         id: results.insertId,
                                         nombre,
-                                        fotoEmpresa, 
+                                        foto: '/images/empresa-default.png',
                                         tipo: 'empresa'
                                     };
 
@@ -487,7 +486,7 @@ const postLoginEmpresa = async (req, res, next) => {
                         }
 
                         // 3. Guardar en sesión
-                        const fotoEmpresa = empresa.foto;
+                        const fotoEmpresa = empresa.foto || '/images/empresa-default.png';
                         req.session.usuario = {
                             id: empresa.id_empresa,
                             nombre: empresa.nombre,
@@ -521,7 +520,7 @@ const postLoginEmpresa = async (req, res, next) => {
 
                 // 3. Guardar en sesión
                 connection.release();
-                const fotoEmpresa = empresa.foto;
+                const fotoEmpresa = empresa.foto || '/images/empresa-default.png';
                 req.session.usuario = {
                     id: empresa.id_empresa,
                     nombre: empresa.nombre,
