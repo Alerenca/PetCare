@@ -776,6 +776,13 @@ ALTER TABLE `valoraciones`
   ADD CONSTRAINT `chk_valoracion_destinatario`
   CHECK ((`id_destinatario` IS NOT NULL) + (`id_empresa` IS NOT NULL) = 1);
 
+--
+-- Usuario administrador por defecto
+-- Contraseña: Admin1234!
+--
+INSERT INTO `usuarios` (`nombre_usuario`, `nombre_completo`, `fecha_nacimiento`, `telefono`, `correo`, `contraseña`, `rol`, `activo`) VALUES
+('admin', 'Administrador', '1990-01-01', 600000000, 'admin@petcare.com', '$2b$10$rUbZuZRmY/yXGcdQifW3R.94o1B89V5HvTyaoveI1KeZEYcm2hcNq', 'admin', 1);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
