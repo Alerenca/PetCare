@@ -185,5 +185,7 @@ router.get('/eliminarCuentaUsuario/:id', isAuthenticated, isOwnUserProfile, user
 router.get('/eliminarCuentaEmpresa/:id', isAuthenticated, isOwnCompanyProfile, userController.postEliminarCuentaEmpresa);
 router.get('/perfilUsuario/:id_perfil/valoracion/:id_valoracion/usuario/:id_autor/reportar', userController.getReportarValoracion);
 router.post('/perfilUsuario/:id_perfil/valoracion/:id_valoracion/usuario/:id_autor/reportar', userController.postReportarValoracion);
+router.get('/perfilEmpresa/:id_perfil/valoracion/:id_valoracion/usuario/:id_autor/reportar', userController.getReportarValoracionEmpresa);
+router.post('/perfilEmpresa/:id_perfil/valoracion/:id_valoracion/usuario/:id_autor/reportar', userController.postReportarValoracionEmpresa);
 
 module.exports = router; 

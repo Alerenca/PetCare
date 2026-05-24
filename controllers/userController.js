@@ -110,28 +110,54 @@ const getPerfilEmpresa = (req, res) => {
 
         const empresaId = parseInt(req.params.id, 10); 
         connection.query('SELECT * FROM empresas WHERE id_empresa = ?', [empresaId], (err, results) => {
-            connection.release(); 
             if (err) { // Comprobar errores de consulta
+                connection.release();
                 console.error('Error al ejecutar la consulta:', err);
                 return res.status(500).send('Error al recuperar los datos de la empresa'); 
             }
 
             if (results.length === 0) { // Comprobar si la empresa existe
+                connection.release();
                 return res.status(404).send('Empresa no encontrada'); 
             } else if (results[0].activo === 0) { // Comprobar si la empresa está activa
+                connection.release();
                 return res.status(403).send('Cuenta de empresa inactiva'); 
             }
 
-            const usuarioSesion = req.session && req.session.usuario ? req.session.usuario : null;
-            const esPropia = !!(usuarioSesion && usuarioSesion.tipo === 'empresa' && Number(usuarioSesion.id) === empresaId);
-            const puedeEditar = esPropia;
+            // Consulta de valoraciones de empresa
+            const queryValoraciones = `
+                SELECT v.id_valoracion, v.puntuacion, v.comentario, v.id_autor,
+                       u.nombre_usuario AS autor_nombre, u.nombre_completo AS autor_nombre_completo
+                FROM valoraciones v
+                LEFT JOIN usuarios u ON v.id_autor = u.id_usuario
+                WHERE v.id_empresa = ?
+                ORDER BY v.id_valoracion DESC
+            `;
 
-            res.render('perfilEmpresa', {
-                empresa: results[0], 
-                valoraciones: [], //TODO: Falta recoger bien las valoraciones
-                esPropia,
-                puedeEditar
-            })
+            connection.query(queryValoraciones, [empresaId], (err, valoraciones) => {
+                connection.release();
+                if (err) {
+                    console.error('Error al recuperar las valoraciones de la empresa:', err);
+                    return res.status(500).send('Error al recuperar las valoraciones de la empresa');
+                }
+
+                const mediaValoraciones = valoraciones.length > 0
+                    ? Math.round((valoraciones.reduce((sum, v) => sum + v.puntuacion, 0) / valoraciones.length) * 10) / 10
+                    : null;
+
+                const usuarioSesion = req.session && req.session.usuario ? req.session.usuario : null;
+                const esPropia = !!(usuarioSesion && usuarioSesion.tipo === 'empresa' && Number(usuarioSesion.id) === empresaId);
+                const puedeEditar = esPropia;
+
+                res.render('perfilEmpresa', {
+                    empresa: results[0], 
+                    valoraciones,
+                    mediaValoraciones,
+                    esPropia,
+                    puedeEditar,
+                    usuarioSesion
+                })
+            });
         })
     })
 };
@@ -664,6 +690,85 @@ const postReportarValoracion = (req, res) => {
     });
 };
 
+const getReportarValoracionEmpresa = (req, res) => {
+    const esAjax = req.xhr || req.get('X-Requested-With') === 'XMLHttpRequest';
+    if (!esAjax) {
+        return res.redirect(`/user/perfilEmpresa/${req.params.id_perfil}`);
+    }
+
+    res.render('plantillas/reportar', {
+        usuario: req.session.usuario || null,
+        tipo: 'valoracion',
+        action: `/user/perfilEmpresa/${req.params.id_perfil}/valoracion/${req.params.id_valoracion}/usuario/${req.params.id_autor}/reportar`,
+        error: null,
+        errores: [],
+        reporte: {
+            motivo: '',
+            fecha: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            id_usuario_reportado: req.params.id_autor,
+            id_foro: null,
+            id_comentario: null,
+            id_valoracion: req.params.id_valoracion
+        }
+    });
+};
+
+const postReportarValoracionEmpresa = (req, res) => {
+    const usuario = req.session.usuario;
+    const id_autor = usuario ? usuario.id : null;
+    const id_perfil = parseInt(req.params.id_perfil, 10);
+    const id_valoracion = parseInt(req.params.id_valoracion, 10);
+    const id_usuario_reportado = parseInt(req.params.id_autor, 10);
+    const { motivo, fecha, descripcion } = req.body;
+    const estado = 'pendiente';
+    const motivosPermitidos = ['spam', 'lenguaje_ofensivo', 'contenido_inapropiado', 'informacion_falsa'];
+
+    if (!id_autor) {
+        return res.status(401).send('Debes iniciar sesion para reportar contenido');
+    }
+
+    if (Number.isNaN(id_valoracion) || Number.isNaN(id_usuario_reportado)) {
+        return res.status(400).send('Parametros invalidos');
+    }
+
+    if (!motivo || !motivosPermitidos.includes(motivo)) {
+        return res.status(400).send('Motivo de reporte invalido');
+    }
+
+    const descripcionLimpia = (descripcion || '').trim();
+    if (descripcionLimpia === '') {
+        return res.status(400).send('La descripción es obligatoria');
+    }
+    if (descripcionLimpia.length > 255) {
+        return res.status(400).send('La descripción no puede superar 255 caracteres');
+    }
+
+    const fechaReporte = fecha && fecha.trim() ? fecha : new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    pool.getConnection((err, connection) => {
+        if (err) {
+            console.error('Error al conectar a la base de datos:', err);
+            return res.status(500).send('Error al conectar a la base de datos');
+        }
+
+        const sql = `
+            INSERT INTO reportes
+                (motivo, estado, fecha, id_autor, id_usuario_reportado, id_foro, id_comentario, id_valoracion, descripcion)
+            VALUES
+                (?, ?, ?, ?, ?, NULL, NULL, ?, ?)
+        `;
+
+        connection.query(sql, [motivo, estado, fechaReporte, id_autor, id_usuario_reportado, id_valoracion, descripcionLimpia], (insertErr) => {
+            connection.release();
+            if (insertErr) {
+                console.error('Error al crear el reporte de la valoracion de empresa:', insertErr);
+                return res.status(500).send('Error al crear el reporte');
+            }
+            return res.redirect(`/user/perfilEmpresa/${id_perfil}?reporte=ok&tipo=valoracion`);
+        });
+    });
+};
+
 module.exports = {
     getPerfilUsuario,
     getPerfilEmpresa, 
@@ -674,5 +779,7 @@ module.exports = {
     postEliminarCuentaUsuario,
     postEliminarCuentaEmpresa, 
     getReportarValoracion,
-    postReportarValoracion
+    postReportarValoracion,
+    getReportarValoracionEmpresa,
+    postReportarValoracionEmpresa
 };
