@@ -414,7 +414,7 @@ describe('authController.postRegisterEmpresa', () => {
       expect(req.session.usuario).toEqual({
         id: 43,
         nombre: 'Empresa ABC',
-        fotoEmpresa: null,
+        foto: '/images/empresa-default.png',
         tipo: 'empresa'
       });
       expect(res.redirect).toHaveBeenCalledWith('/');
@@ -660,6 +660,7 @@ describe('authController.postLoginEmpresa', () => {
       expect(req.session.usuario).toEqual({
         id: 1,
         nombre: 'Empresa ABC',
+        foto: '/images/empresa-default.png',
         tipo: 'empresa'
       });
       expect(res.redirect).toHaveBeenCalledWith('/');
