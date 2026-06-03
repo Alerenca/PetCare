@@ -760,7 +760,7 @@ describe('POST /pets/cartilla/eliminar-patologia – BD real', () => {
         );
         await request(buildApp())
             .post('/pets/cartilla/eliminar-patologia')
-            .send({ id_patologia: String(inserted.insertId) });
+            .send({ id_condicion: String(inserted.insertId) });
 
         const [rows] = await db.query(
             'SELECT * FROM condicion_medica WHERE id_condicion = ?', [inserted.insertId]
