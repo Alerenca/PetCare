@@ -1005,7 +1005,7 @@ const eliminarTratamiento = (req, res) => {
 }
 
 const eliminarPatologia = (req, res) => {
-    const id_patologia = req.body.id_patologia;
+    const id_patologia = req.body.id_condicion;
     pool.getConnection((err, connection) => {
         if (err) {
             console.error("Error al conectar a la base de datos:", err);
